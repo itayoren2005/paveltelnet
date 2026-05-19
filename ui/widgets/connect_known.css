@@ -1,0 +1,245 @@
+/*
+// Sshwifty - A Web SSH client
+//
+// Copyright (C) 2019-2022 Ni Rui <ranqus@gmail.com>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as
+// published by the Free Software Foundation, either version 3 of the
+// License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+@charset "utf-8";
+
+#connect-known-list {
+  min-height: 200px;
+  font-size: 0.75em;
+  background: #3a3a3a;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+#connect-known-list h3 {
+  font-size: 1.1em;
+  color: #999;
+  margin: 5px 0 15px 0;
+  text-transform: uppercase;
+  font-weight: bold;
+}
+
+#connect-known-list.reloaded {
+}
+
+#connect-known-list.reloaded::after {
+  opacity: 0;
+  z-index: 2;
+  content: " ";
+  display: block;
+  position: absolute;
+  width: 100%;
+  height: 0;
+  top: -2px;
+  left: 0;
+  right: 0;
+  background: #fff;
+  animation-name: home-window-display-flash;
+  animation-duration: 0.5s;
+  animation-iteration-count: 1;
+  box-shadow: 0 0 10px #fff;
+}
+
+#connect-known-list-list,
+#connect-known-list-empty {
+  flex: auto;
+}
+
+#connect-known-list-empty {
+  text-align: center;
+  color: #999;
+  font-size: 1.2em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+#connect-known-list-import {
+  margin: 15px;
+  color: #aaa;
+  font-size: 1.1em;
+  text-align: center;
+}
+
+#connect-known-list-import a {
+  color: #e9a;
+  text-decoration: none;
+}
+
+#connect-known-list-list {
+  padding: 15px 20px 20px 20px;
+}
+
+#connect-known-list-list li {
+  width: 50%;
+  position: relative;
+}
+
+@media (max-width: 768px) {
+  #connect-known-list-list li {
+    width: 100%;
+  }
+}
+
+#connect-known-list-list li > .lst-wrap {
+  cursor: pointer;
+}
+
+#connect-known-list-list li > .lst-wrap:hover {
+  background: #444;
+}
+
+#connect-known-list-list li > .labels {
+  position: absolute;
+  top: 0;
+  left: 0;
+  text-transform: uppercase;
+  font-size: 0.85em;
+  letter-spacing: 1px;
+}
+
+#connect-known-list-list li > .labels > .type {
+  display: inline-block;
+  padding: 3px;
+  background: #a56;
+  color: #fff;
+}
+
+#connect-known-list-list li > .labels > .opt {
+  display: none;
+  padding: 3px;
+  background: #a56;
+  color: #fff;
+  text-decoration: none;
+  z-index: 2;
+}
+
+@media (max-width: 768px) {
+  #connect-known-list-list li > .labels > .opt {
+    display: inline-block;
+  }
+}
+
+#connect-known-list-list li > .labels > .opt.link {
+  background: #287;
+  color: #fff;
+}
+
+#connect-known-list-list li > .labels > .opt.del {
+  background: #a56;
+  color: #fff;
+}
+
+#connect-known-list-list li > .labels > .opt.clr {
+  background: #b71;
+  color: #fff;
+}
+
+#connect-known-list-list li:hover > .labels > .opt,
+#connect-known-list-list li:focus > .labels > .opt {
+  display: inline-block;
+}
+
+#connect-known-list-list li > .lst-wrap > h4 {
+  font-size: 1.5em;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+#connect-known-list-list li > .lst-wrap > h4::before {
+  content: ">_";
+  color: #555;
+  font-size: 0.8em;
+  margin-right: 5px;
+  font-weight: normal;
+  padding: 0 2px;
+  border-radius: 2px;
+}
+
+#connect-known-list-list li > .lst-wrap > h4.highlight::before {
+  color: #eee;
+  background: #555;
+}
+
+#connect-known-list-presets {
+  margin-top: 10px;
+  padding: 15px 20px 20px 20px;
+}
+
+#connect-known-list-presets.last-planel {
+  background: #3f3f3f;
+}
+
+#connect-known-list-presets li {
+  width: 50%;
+  position: relative;
+}
+
+#connect-known-list-presets li.disabled {
+  opacity: 0.5;
+}
+
+@media (max-width: 768px) {
+  #connect-known-list-presets li {
+    width: 100%;
+  }
+}
+
+#connect-known-list-presets li > .lst-wrap {
+  cursor: pointer;
+  border-radius: 0 3px 3px 3px;
+  margin: 12px 10px 10px 0;
+  padding: 10px;
+}
+
+#connect-known-list-presets li > .lst-wrap > .labels {
+  position: absolute;
+  top: 0;
+  left: 0;
+  text-transform: uppercase;
+  font-size: 0.85em;
+  letter-spacing: 1px;
+}
+
+#connect-known-list-presets li > .lst-wrap > .labels > .type {
+  display: inline-block;
+  padding: 3px;
+  background: #a56;
+  color: #fff;
+  border-radius: 3px 3px 3px 0;
+}
+
+#connect-known-list-presets li > .lst-wrap > h4 {
+  font-size: 1.3em;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+#connect-known-list-presets-alert {
+  font-size: 1.15em;
+  color: #fff;
+  background: #c73;
+  padding: 10px;
+  margin-top: 10px;
+  line-height: 1.5;
+}

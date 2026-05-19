@@ -40,6 +40,52 @@ const DEFAULT_PORT = 23;
 
 const HostMaxSearchResults = 3;
 
+function showTerminalConflictModal(remote) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.className = "telnet-conflict-modal-overlay";
+
+    const modal = document.createElement("div");
+    modal.className = "telnet-conflict-modal";
+
+    const title = document.createElement("h3");
+    title.textContent = "Session conflict";
+
+    const message = document.createElement("p");
+    message.textContent =
+      "Another user is already connected to " +
+      remote +
+      ". Do you want to disconnect him?";
+
+    const actions = document.createElement("div");
+    actions.className = "telnet-conflict-modal-actions";
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.className = "telnet-conflict-btn cancel";
+    cancelBtn.textContent = "Cancel";
+
+    const confirmBtn = document.createElement("button");
+    confirmBtn.className = "telnet-conflict-btn confirm";
+    confirmBtn.textContent = "Disconnect";
+
+    const cleanup = (approved) => {
+      document.body.removeChild(overlay);
+      resolve(approved);
+    };
+
+    cancelBtn.addEventListener("click", () => cleanup(false));
+    confirmBtn.addEventListener("click", () => cleanup(true));
+
+    actions.appendChild(cancelBtn);
+    actions.appendChild(confirmBtn);
+    modal.appendChild(title);
+    modal.appendChild(message);
+    modal.appendChild(actions);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+  });
+}
+
 class Telnet {
   /**
    * constructor
@@ -414,11 +460,7 @@ class Wizard {
       async "connect.conflict"(rd, commandHandler) {
         const readed = await reader.readCompletely(rd);
         const remote = new TextDecoder("utf-8").decode(readed.buffer);
-        const approved = window.confirm(
-          "Another user is already connected to " +
-            remote +
-            ". Do you want to disconnect him?"
-        );
+        const approved = await showTerminalConflictModal(remote);
 
         commandHandler.sendConflictDecision(approved);
 

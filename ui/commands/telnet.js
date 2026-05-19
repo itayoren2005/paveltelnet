@@ -34,6 +34,7 @@ const SERVER_INITIAL_ERROR_BAD_ADDRESS = 0x01;
 const SERVER_REMOTE_BAND = 0x00;
 const SERVER_DIAL_FAILED = 0x01;
 const SERVER_DIAL_CONNECTED = 0x02;
+const SERVER_CONFLICT = 0x03;
 
 const DEFAULT_PORT = 23;
 
@@ -58,6 +59,7 @@ class Telnet {
         "initialized",
         "connect.failed",
         "connect.succeed",
+        "connect.conflict",
         "@inband",
         "close",
         "@completed",
@@ -136,6 +138,12 @@ class Telnet {
           return this.events.fire("inband", rd);
         }
         break;
+
+      case SERVER_CONFLICT:
+        if (!this.connected) {
+          return this.events.fire("connect.conflict", rd, this);
+        }
+        break;
     }
 
     throw new Exception("Unknown stream header marker");
@@ -157,6 +165,10 @@ class Telnet {
    */
   sendData(data) {
     return this.sender.sendData(0x00, data);
+  }
+
+  sendConflictDecision(approved) {
+    return this.sender.sendData(0x01, new Uint8Array([approved ? 1 : 0]));
   }
 
   /**
@@ -398,6 +410,26 @@ class Wizard {
           message = new TextDecoder("utf-8").decode(readed.buffer);
 
         self.step.resolve(self.stepErrorDone("Connection failed", message));
+      },
+      async "connect.conflict"(rd, commandHandler) {
+        const readed = await reader.readCompletely(rd);
+        const remote = new TextDecoder("utf-8").decode(readed.buffer);
+        const approved = window.confirm(
+          "Another user is already connected to " +
+            remote +
+            ". Do you want to disconnect him?"
+        );
+
+        commandHandler.sendConflictDecision(approved);
+
+        if (!approved) {
+          self.step.resolve(
+            self.stepErrorDone(
+              "Connection cancelled",
+              "Connection has been cancelled by user decision"
+            )
+          );
+        }
       },
       "@inband"(rd) {},
       close() {},

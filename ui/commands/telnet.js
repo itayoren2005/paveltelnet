@@ -34,10 +34,57 @@ const SERVER_INITIAL_ERROR_BAD_ADDRESS = 0x01;
 const SERVER_REMOTE_BAND = 0x00;
 const SERVER_DIAL_FAILED = 0x01;
 const SERVER_DIAL_CONNECTED = 0x02;
+const SERVER_CONFLICT = 0x03;
 
 const DEFAULT_PORT = 23;
 
 const HostMaxSearchResults = 3;
+
+function showTerminalConflictModal(remote) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.className = "telnet-conflict-modal-overlay";
+
+    const modal = document.createElement("div");
+    modal.className = "telnet-conflict-modal";
+
+    const title = document.createElement("h3");
+    title.textContent = "Session conflict";
+
+    const message = document.createElement("p");
+    message.textContent =
+      "Another user is already connected to " +
+      remote +
+      ". Do you want to disconnect him?";
+
+    const actions = document.createElement("div");
+    actions.className = "telnet-conflict-modal-actions";
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.className = "telnet-conflict-btn cancel";
+    cancelBtn.textContent = "Cancel";
+
+    const confirmBtn = document.createElement("button");
+    confirmBtn.className = "telnet-conflict-btn confirm";
+    confirmBtn.textContent = "Disconnect";
+
+    const cleanup = (approved) => {
+      document.body.removeChild(overlay);
+      resolve(approved);
+    };
+
+    cancelBtn.addEventListener("click", () => cleanup(false));
+    confirmBtn.addEventListener("click", () => cleanup(true));
+
+    actions.appendChild(cancelBtn);
+    actions.appendChild(confirmBtn);
+    modal.appendChild(title);
+    modal.appendChild(message);
+    modal.appendChild(actions);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+  });
+}
 
 class Telnet {
   /**
@@ -58,6 +105,7 @@ class Telnet {
         "initialized",
         "connect.failed",
         "connect.succeed",
+        "connect.conflict",
         "@inband",
         "close",
         "@completed",
@@ -136,6 +184,12 @@ class Telnet {
           return this.events.fire("inband", rd);
         }
         break;
+
+      case SERVER_CONFLICT:
+        if (!this.connected) {
+          return this.events.fire("connect.conflict", rd, this);
+        }
+        break;
     }
 
     throw new Exception("Unknown stream header marker");
@@ -157,6 +211,10 @@ class Telnet {
    */
   sendData(data) {
     return this.sender.sendData(0x00, data);
+  }
+
+  sendConflictDecision(approved) {
+    return this.sender.sendData(0x01, new Uint8Array([approved ? 1 : 0]));
   }
 
   /**
@@ -398,6 +456,22 @@ class Wizard {
           message = new TextDecoder("utf-8").decode(readed.buffer);
 
         self.step.resolve(self.stepErrorDone("Connection failed", message));
+      },
+      async "connect.conflict"(rd, commandHandler) {
+        const readed = await reader.readCompletely(rd);
+        const remote = new TextDecoder("utf-8").decode(readed.buffer);
+        const approved = await showTerminalConflictModal(remote);
+
+        commandHandler.sendConflictDecision(approved);
+
+        if (!approved) {
+          self.step.resolve(
+            self.stepErrorDone(
+              "Connection cancelled",
+              "Connection has been cancelled by user decision"
+            )
+          );
+        }
       },
       "@inband"(rd) {},
       close() {},

@@ -50,6 +50,12 @@ const (
 	TelnetServerRemoteBand    = 0x00
 	TelnetServerDialFailed    = 0x01
 	TelnetServerDialConnected = 0x02
+	TelnetServerConflict      = 0x03
+)
+
+const (
+	TelnetClientData    = 0x00
+	TelnetClientConfirm = 0x01
 )
 
 type telnetClient struct {
@@ -59,6 +65,10 @@ type telnetClient struct {
 	remoteChan chan net.Conn
 	remoteConn net.Conn
 	closeWait  sync.WaitGroup
+	remoteIP   string
+	decision   chan bool
+	acquired   bool
+	stateLock  sync.Mutex
 }
 
 func newTelnet(
@@ -73,6 +83,10 @@ func newTelnet(
 		remoteChan: make(chan net.Conn, 1),
 		remoteConn: nil,
 		closeWait:  sync.WaitGroup{},
+		remoteIP:   "",
+		decision:   make(chan bool, 1),
+		acquired:   false,
+		stateLock:  sync.Mutex{},
 	}
 }
 
@@ -102,21 +116,71 @@ func (d *telnetClient) Bootup(
 			addrErr, TelnetRequestErrorBadRemoteAddress)
 	}
 
+	host, _, splitErr := net.SplitHostPort(addr.String())
+	if splitErr != nil {
+		return nil, command.ToFSMError(
+			splitErr, TelnetRequestErrorBadRemoteAddress)
+	}
+
+	d.remoteIP = host
+
 	d.closeWait.Add(1)
 	go d.remote(addr.String())
 
 	return d.client, command.NoFSMError()
 }
 
+func (d *telnetClient) acquireOrConfirm(buf []byte) bool {
+	telnetSessions.add(d.remoteIP, d)
+
+	if !telnetSessions.conflicts(d.remoteIP, d) {
+		d.acquired = true
+		return true
+	}
+
+	msgLen := copy(buf[d.w.HeaderSize():], d.remoteIP)
+	if msgLen <= 0 {
+		msgLen = copy(buf[d.w.HeaderSize():], "remote")
+	}
+
+	_ = d.w.SendManual(TelnetServerConflict, buf[:msgLen+d.w.HeaderSize()])
+
+	for {
+		approved, ok := <-d.decision
+		if !ok {
+			return false
+		}
+
+		if !approved {
+			return false
+		}
+
+		telnetSessions.disconnectOthers(d.remoteIP, d)
+
+		if !telnetSessions.conflicts(d.remoteIP, d) {
+			d.acquired = true
+			return true
+		}
+	}
+}
+
 func (d *telnetClient) remote(addr string) {
 	defer func() {
 		d.w.Signal(command.HeaderClose)
 
+		telnetSessions.remove(d.remoteIP, d)
 		close(d.remoteChan)
 		d.closeWait.Done()
 	}()
 
 	buf := [4096]byte{}
+
+	if !d.acquireOrConfirm(buf[:]) {
+		errLen := copy(
+			buf[d.w.HeaderSize():], "Connection cancelled") + d.w.HeaderSize()
+		d.w.SendManual(TelnetServerDialFailed, buf[:errLen])
+		return
+	}
 
 	clientConn, clientConnErr := d.cfg.Dial("tcp", addr, d.cfg.DialTimeout)
 
@@ -139,12 +203,13 @@ func (d *telnetClient) remote(addr string) {
 		return
 	}
 
-	// Set timeout for writer, otherwise the Timeout writer will never
-	// be triggered
 	clientConn.SetWriteDeadline(time.Now().Add(d.cfg.DialTimeout))
 	timeoutClientConn := network.NewWriteTimeoutConn(
 		clientConn, d.cfg.DialTimeout)
 
+	d.stateLock.Lock()
+	d.remoteConn = &timeoutClientConn
+	d.stateLock.Unlock()
 	d.remoteChan <- &timeoutClientConn
 
 	for {
@@ -160,6 +225,15 @@ func (d *telnetClient) remote(addr string) {
 		if wErr != nil {
 			return
 		}
+	}
+}
+
+func (d *telnetClient) forceDisconnect() {
+	d.stateLock.Lock()
+	defer d.stateLock.Unlock()
+
+	if d.remoteConn != nil {
+		d.remoteConn.Close()
 	}
 }
 
@@ -185,14 +259,22 @@ func (d *telnetClient) client(
 	h command.StreamHeader,
 	b []byte,
 ) error {
+	if h.Marker() == TelnetClientConfirm {
+		confirmData, confirmErr := rw.FetchOneByte(r.Fetch)
+		if confirmErr != nil {
+			return confirmErr
+		}
+
+		d.decision <- (confirmData[0] == 1)
+		return nil
+	}
+
 	remoteConn, remoteConnErr := d.getRemote()
 
 	if remoteConnErr != nil {
 		return remoteConnErr
 	}
 
-	// All Telnet requests are in-band, so we just directly send them all
-	// to the server
 	for !r.Completed() {
 		rBuf, rErr := r.Buffered()
 

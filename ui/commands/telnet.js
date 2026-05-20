@@ -44,7 +44,7 @@ function showConflictConfirmation(remote) {
   return new Promise((resolve) => {
     const overlay = document.createElement("div");
     overlay.style.cssText =
-      "position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:99999;" +
+      "position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:2147483647;" +
       "display:flex;align-items:center;justify-content:center;";
 
     const modal = document.createElement("div");

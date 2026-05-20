@@ -301,6 +301,27 @@ func (d *telnetClient) client(
 }
 
 func (d *telnetClient) Close() error {
+	d.stateLock.Lock()
+	acquired := d.acquired
+	remoteConn := d.remoteConn
+	d.stateLock.Unlock()
+
+	if !acquired {
+		select {
+		case d.decision <- false:
+		default:
+		}
+
+		d.closeWait.Wait()
+		return nil
+	}
+
+	if remoteConn != nil {
+		remoteConn.Close()
+		d.closeWait.Wait()
+		return nil
+	}
+
 	remoteConn, remoteConnErr := d.getRemote()
 
 	if remoteConnErr == nil {

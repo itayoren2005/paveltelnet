@@ -182,7 +182,7 @@ func (d *telnetClient) remote(addr string) {
 		return
 	}
 
-	clientConn, clientConnErr := d.cfg.Dial("tcp", addr, d.cfg.DialTimeout)
+	clientConn, clientConnErr := d.cfg.Dial("udp", addr, d.cfg.DialTimeout)
 
 	if clientConnErr != nil {
 		errLen := copy(
@@ -282,7 +282,13 @@ func (d *telnetClient) client(
 			return rErr
 		}
 
-		_, wErr := remoteConn.Write(rBuf)
+	var wErr error
+		if len(rBuf) == 1 && rBuf[0] == 127{
+			rBuf[0] = 8
+			_, wErr = remoteConn.Write(rBuf)
+		} else {
+		_, wErr = remoteConn.Write(rBuf)
+		}
 
 		if wErr != nil {
 			remoteConn.Close()

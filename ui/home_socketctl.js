@@ -2,14 +2,14 @@ import * as history from "./history.js";
 import { ECHO_FAILED } from "./socket.js";
 
 export function build(ctx) {
-  const connectionStatusNotConnected = "Sshwifty is ready to connect";
+  const connectionStatusNotConnected = "Shemesh Terminal is ready to connect";
   const connectionStatusConnecting =
-    "Connecting to Sshwifty backend server. It should only take " +
+    "Connecting to Shemesh Terminal backend server. It should only take " +
     "less than a second, or two";
   const connectionStatusDisconnected =
-    "Sshwifty is disconnected from it's backend server";
+    "Shemesh Terminal is disconnected from it's backend server";
   const connectionStatusConnected =
-    "Sshwifty is connected to it's backend server, user interface operational";
+    "Shemesh Terminal is connected to it's backend server, user interface operational";
   const connectionStatusUnmeasurable =
     "Unable to measure connection delay. The connection maybe very " +
     "busy or already lost";

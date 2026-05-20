@@ -36,10 +36,9 @@ class Dial {
    *                            decrypt socket traffic
    *
    */
-  constructor(address, timeout, privateKey) {
+  constructor(address, timeout) {
     this.address = address;
     this.timeout = timeout;
-    this.privateKey = privateKey;
     this.keepAliveTicker = null;
   }
 
@@ -205,17 +204,17 @@ class Dial {
           10 // max 10 buffered requests
         );
 
-      let senderNonce = crypt.generateNonce();
-      sd.send(senderNonce);
+      // let senderNonce = crypt.generateNonce();
+      // sd.send(senderNonce);
 
-      let receiverNonce = await reader.readN(rd, crypt.GCMNonceSize);
+      // let receiverNonce = await reader.readN(rd, crypt.GCMNonceSize);
 
-      let key = await this.buildKey();
+      // let key = await this.buildKey();
 
       sdDataConvert = async (rawData) => {
-        let encoded = await crypt.encryptGCM(key, senderNonce, rawData);
+        let encoded =rawData
 
-        crypt.increaseNonce(senderNonce);
+        //crypt.increaseNonce(senderNonce);
 
         let dataToSend = new Uint8Array(encoded.byteLength + 2);
 
@@ -236,13 +235,14 @@ class Dial {
           dSize <<= 8;
           dSize |= dSizeBytes[1];
 
-          let decoded = await crypt.decryptGCM(
-            key,
-            receiverNonce,
-            await reader.readN(rd, dSize)
-          );
+          // let decoded = await crypt.decryptGCM(
+          //   key,
+          //   receiverNonce,
+          //   await reader.readN(rd, dSize)
+          // );
+          let decoded = await reader.readN(rd, dSize);
 
-          crypt.increaseNonce(receiverNonce);
+          // crypt.increaseNonce(receiverNonce);
 
           r.feed(
             new reader.Buffer(new Uint8Array(decoded), () => {}),
@@ -276,7 +276,7 @@ export class Socket {
    * @param {number} echoInterval Echo interval
    */
   constructor(address, privateKey, timeout, echoInterval) {
-    this.dial = new Dial(address, timeout, privateKey);
+    this.dial = new Dial(address, timeout);
     this.echoInterval = echoInterval;
     this.streamHandler = null;
   }

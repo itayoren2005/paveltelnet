@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   sshwifty:
-    image: sshwifty:dev
+    image: docker.registry.moah:8043/library/sshwifty
     container_name: sshwifty
     user: "nobody:nobody"
     build: ./

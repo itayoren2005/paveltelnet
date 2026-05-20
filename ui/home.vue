@@ -20,7 +20,7 @@
 <template>
   <div id="home">
     <header id="home-header">
-      <h1 id="home-hd-title">Sshwifty</h1>
+      <h1 id="home-hd-title">Shemesh Terminal</h1>
 
       <a id="home-hd-delay" href="javascript:;" @click="showDelayWindow">
         <span
@@ -32,29 +32,6 @@
           socket.message
         }}</span>
       </a>
-
-      <a
-        id="home-hd-plus"
-        class="icon icon-plus1"
-        href="javascript:;"
-        :class="{
-          working: connector.inputting,
-          intensify: connector.inputting && !windows.connect,
-        }"
-        @click="showConnectWindow"
-      ></a>
-
-      <tabs
-        id="home-hd-tabs"
-        :tab="tab.current"
-        :tabs="tab.tabs"
-        tabs-class="tab1"
-        list-trigger-class="icon icon-more1"
-        @current="switchTab"
-        @retap="retapTab"
-        @list="showTabsWindow"
-        @close="closeTab"
-      ></tabs>
     </header>
 
     <screens

@@ -254,45 +254,45 @@ func (s socket) Get(
 	//          DO NOT rely on this if you want to secured communitcation, in
 	//          that case, you need to use HTTPS.
 	//
-	readNonce := [socketGCMStandardNonceSize]byte{}
-	_, nonceReadErr := io.ReadFull(&wsReader, readNonce[:])
+	// readNonce := [socketGCMStandardNonceSize]byte{}
+	// _, nonceReadErr := io.ReadFull(&wsReader, readNonce[:])
 
-	if nonceReadErr != nil {
-		return NewError(http.StatusBadRequest, fmt.Sprintf(
-			"Unable to read initial client nonce: %s", nonceReadErr.Error()))
-	}
+	// if nonceReadErr != nil {
+	// 	return NewError(http.StatusBadRequest, fmt.Sprintf(
+	// 		"Unable to read initial client nonce: %s", nonceReadErr.Error()))
+	// }
 
-	writeNonce := [socketGCMStandardNonceSize]byte{}
-	nonceReadErr = s.generateNonce(writeNonce[:])
+	// writeNonce := [socketGCMStandardNonceSize]byte{}
+	// nonceReadErr = s.generateNonce(writeNonce[:])
 
-	if nonceReadErr != nil {
-		return NewError(http.StatusBadRequest, fmt.Sprintf(
-			"Unable to generate initial server nonce: %s",
-			nonceReadErr.Error()))
-	}
+	// if nonceReadErr != nil {
+	// 	return NewError(http.StatusBadRequest, fmt.Sprintf(
+	// 		"Unable to generate initial server nonce: %s",
+	// 		nonceReadErr.Error()))
+	// }
 
-	_, nonceSendErr := wsWriter.Write(writeNonce[:])
+	// _, nonceSendErr := wsWriter.Write(writeNonce[:])
 
-	if nonceSendErr != nil {
-		return NewError(http.StatusBadRequest, fmt.Sprintf(
-			"Unable to send server nonce to client: %s", nonceSendErr.Error()))
-	}
+	// if nonceSendErr != nil {
+	// 	return NewError(http.StatusBadRequest, fmt.Sprintf(
+	// 		"Unable to send server nonce to client: %s", nonceSendErr.Error()))
+	// }
 
-	cipherKey := s.buildCipherKey(r)
+	// cipherKey := s.buildCipherKey(r)
 
-	readCipher, writeCipher, cipherCreationErr := s.createCipher(cipherKey[:])
+	// readCipher, writeCipher, cipherCreationErr := s.createCipher(cipherKey[:])
 
-	if cipherCreationErr != nil {
-		return NewError(http.StatusInternalServerError, fmt.Sprintf(
-			"Unable to create cipher: %s", cipherCreationErr.Error()))
-	}
+	// if cipherCreationErr != nil {
+	// 	return NewError(http.StatusInternalServerError, fmt.Sprintf(
+	// 		"Unable to create cipher: %s", cipherCreationErr.Error()))
+	// }
 
 	// Start service
 	const cipherReadBufSize = 4096
 
 	cipherReadBuf := [cipherReadBufSize]byte{}
 	cipherWriteBuf := [cipherReadBufSize]byte{}
-	maxWriteLen := int(cipherReadBufSize) - (writeCipher.Overhead() + 2)
+	maxWriteLen := int(cipherReadBufSize) // - (writeCipher.Overhead() + 2)
 
 	senderLock := sync.Mutex{}
 	cmdExec, cmdExecErr := s.commander.New(
@@ -301,7 +301,7 @@ func (s socket) Get(
 			DialTimeout: s.commonCfg.DecideDialTimeout(s.serverCfg.ReadTimeout),
 		},
 		rw.NewFetchReader(func() ([]byte, error) {
-			defer s.increaseNonce(readNonce[:])
+			// defer s.increaseNonce(readNonce[:])
 
 			// Size is unencrypted
 			_, rErr := io.ReadFull(&wsReader, cipherReadBuf[:2])
@@ -326,8 +326,10 @@ func (s socket) Get(
 					return nil, rErr
 				}
 
-				return readCipher.Open(
-					cipherReadBuf[:0], readNonce[:], rData, nil)
+				copy(cipherReadBuf[2:], rData)
+				return cipherReadBuf[2 : 2+packageSize], nil
+				// return readCipher.Open(
+				// 	cipherReadBuf[:0], readNonce[:], rData, nil)
 			}
 
 			_, rErr = io.ReadFull(&wsReader, cipherReadBuf[:packageSize])
@@ -336,11 +338,12 @@ func (s socket) Get(
 				return nil, rErr
 			}
 
-			return readCipher.Open(
-				cipherReadBuf[:0],
-				readNonce[:],
-				cipherReadBuf[:packageSize],
-				nil)
+			return cipherReadBuf[:packageSize], nil
+			// return readCipher.Open(
+			// 	cipherReadBuf[:0],
+			// 	readNonce[:],
+			// 	cipherReadBuf[:packageSize],
+			// 	nil)
 		}),
 		socketPackageWriter{
 			w: wsWriter,
@@ -353,16 +356,19 @@ func (s socket) Get(
 					if readLen > maxWriteLen {
 						readLen = maxWriteLen
 					}
+					// encrypted := writeCipher.Seal(
+					// 	cipherWriteBuf[2:2],
+					// 	writeNonce[:],
+					// 	b[start:start+readLen],
+					// 	nil)
 
-					encrypted := writeCipher.Seal(
-						cipherWriteBuf[2:2],
-						writeNonce[:],
-						b[start:start+readLen],
-						nil)
+					// s.increaseNonce(writeNonce[:])
 
-					s.increaseNonce(writeNonce[:])
+					copy(cipherWriteBuf[2+start:2+start+readLen], b[start:start+readLen])
 
-					encryptedSize := uint16(len(encrypted))
+					// encryptedSize := uint16(len(cipherWriteBuf[2:]))
+					encryptedSize := readLen
+
 
 					if encryptedSize <= 0 {
 						return ErrSocketInvalidDataPackage

@@ -410,7 +410,7 @@ class Control {
 
       await runWait;
 
-      self.subs.reject("Remote connection has been terminated");
+      self.subs.reject("You were disconnected because someone else connected to this session.");
     });
   }
 

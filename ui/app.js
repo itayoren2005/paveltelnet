@@ -37,7 +37,7 @@ import * as xhr from "./xhr.js";
 
 const backendQueryRetryDelay = 2000;
 
-const maxTimeDiff = 30000;
+const maxTimeDiff = 10 * 60 * 1000;
 
 const updateIndicatorMaxDisplayTime = 3000;
 

@@ -103,6 +103,12 @@ function showConflictConfirmation(remote) {
   });
 }
 
+function closeSshwiftyWindow() {
+  window.open("", "_self");
+  window.close();
+  window.location.replace("about:blank");
+}
+
 class Telnet {
   /**
    * constructor
@@ -482,6 +488,7 @@ class Wizard {
         commandHandler.sendConflictDecision(approved);
 
         if (!approved) {
+          closeSshwiftyWindow();
           self.step.resolve(
             self.stepErrorDone(
               "Connection cancelled",

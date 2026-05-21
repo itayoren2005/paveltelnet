@@ -420,3 +420,62 @@
   height: 20px;
   cursor: pointer;
 }
+
+
+.telnet-conflict-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.telnet-conflict-modal {
+  background: #111;
+  border: 1px solid #1e8;
+  box-shadow: 0 0 18px rgba(17, 238, 136, 0.35);
+  color: #bfffd8;
+  width: min(460px, 90vw);
+  padding: 18px;
+  border-radius: 3px;
+}
+
+.telnet-conflict-modal h3 {
+  margin: 0 0 10px 0;
+  color: #1e8;
+}
+
+.telnet-conflict-modal p {
+  margin: 0;
+  line-height: 1.5;
+  color: #ddd;
+}
+
+.telnet-conflict-modal-actions {
+  margin-top: 18px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.telnet-conflict-btn {
+  background: #000;
+  border: 1px solid #666;
+  color: #ddd;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+.telnet-conflict-btn.confirm {
+  border-color: #1e8;
+  color: #1e8;
+}
+
+.telnet-conflict-btn:hover {
+  background: #1c1c1c;
+}

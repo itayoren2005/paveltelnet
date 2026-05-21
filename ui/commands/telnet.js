@@ -40,6 +40,75 @@ const DEFAULT_PORT = 23;
 
 const HostMaxSearchResults = 3;
 
+function showConflictConfirmation(remote) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.style.cssText =
+      "position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:2147483647;" +
+      "display:flex;align-items:center;justify-content:center;";
+
+    const modal = document.createElement("div");
+    modal.setAttribute("dir", "rtl");
+    modal.style.cssText =
+      "width:min(92vw,460px);background:#333;color:#fff;border:1px solid #a56;border-radius:8px;" +
+      "box-shadow:0 18px 48px rgba(0,0,0,0.55);padding:20px;font-family:inherit;";
+
+    const title = document.createElement("h3");
+    title.textContent = "התנגשות חיבור";
+    title.style.cssText = "margin:0 0 10px 0;font-size:20px;color:#ffb3c1;";
+
+    const message = document.createElement("p");
+    message.textContent =
+      "משתמש אחר כבר מחובר אל " +
+      remote +
+      ". האם ברצונך לנתק אותו?";
+    message.style.cssText = "margin:0 0 18px 0;line-height:1.5;color:#f2dce3;";
+
+    const actions = document.createElement("div");
+    actions.style.cssText = "display:flex;justify-content:flex-start;gap:10px;";
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.type = "button";
+    cancelBtn.textContent = "בטל";
+    cancelBtn.style.cssText =
+      "padding:8px 16px;cursor:pointer;background:#444;color:#fff;border:1px solid #666;border-radius:4px;";
+
+    const confirmBtn = document.createElement("button");
+    confirmBtn.type = "button";
+    confirmBtn.textContent = "התחבר";
+    confirmBtn.style.cssText =
+      "padding:8px 16px;cursor:pointer;background:#a56;color:#fff;border:1px solid #c78;border-radius:4px;";
+
+    const close = (approved) => {
+      overlay.remove();
+      resolve(approved);
+    };
+
+    cancelBtn.addEventListener("click", () => close(false));
+    confirmBtn.addEventListener("click", () => close(true));
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) {
+        close(false);
+      }
+    });
+
+    actions.appendChild(cancelBtn);
+    actions.appendChild(confirmBtn);
+    modal.appendChild(title);
+    modal.appendChild(message);
+    modal.appendChild(actions);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    cancelBtn.focus();
+  });
+}
+
+function closeSshwiftyWindow() {
+  window.open("", "_self");
+  window.close();
+  window.location.replace("about:blank");
+}
+
 class Telnet {
   /**
    * constructor
@@ -414,15 +483,12 @@ class Wizard {
       async "connect.conflict"(rd, commandHandler) {
         const readed = await reader.readCompletely(rd);
         const remote = new TextDecoder("utf-8").decode(readed.buffer);
-        const approved = window.confirm(
-          "Another user is already connected to " +
-            remote +
-            ". Do you want to disconnect him?"
-        );
+        const approved = await showConflictConfirmation(remote);
 
         commandHandler.sendConflictDecision(approved);
 
         if (!approved) {
+          closeSshwiftyWindow();
           self.step.resolve(
             self.stepErrorDone(
               "Connection cancelled",

@@ -157,10 +157,12 @@ func (d *telnetClient) acquireOrConfirm(buf []byte) bool {
 
 		telnetSessions.disconnectOthers(d.remoteIP, d)
 
-		if !telnetSessions.conflicts(d.remoteIP, d) {
-			d.acquired = true
-			return true
+		for telnetSessions.conflicts(d.remoteIP, d) {
+			time.Sleep(10 * time.Millisecond)
 		}
+
+		d.acquired = true
+		return true
 	}
 }
 

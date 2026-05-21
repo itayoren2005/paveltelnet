@@ -9,8 +9,6 @@ module.exports = {
   extends: [
     "plugin:vue/recommended",
     "eslint:recommended",
-    "prettier",
-    "plugin:prettier/recommended",
   ],
   rules: {
     "vue/component-name-in-template-casing": ["error", "PascalCase"],

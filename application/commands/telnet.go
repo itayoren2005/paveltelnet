@@ -157,10 +157,12 @@ func (d *telnetClient) acquireOrConfirm(buf []byte) bool {
 
 		telnetSessions.disconnectOthers(d.remoteIP, d)
 
-		if !telnetSessions.conflicts(d.remoteIP, d) {
-			d.acquired = true
-			return true
+		for telnetSessions.conflicts(d.remoteIP, d) {
+			time.Sleep(10 * time.Millisecond)
 		}
+
+		d.acquired = true
+		return true
 	}
 }
 
@@ -182,7 +184,7 @@ func (d *telnetClient) remote(addr string) {
 		return
 	}
 
-	clientConn, clientConnErr := d.cfg.Dial("tcp", addr, d.cfg.DialTimeout)
+	clientConn, clientConnErr := d.cfg.Dial("udp", addr, d.cfg.DialTimeout)
 
 	if clientConnErr != nil {
 		errLen := copy(
@@ -282,7 +284,13 @@ func (d *telnetClient) client(
 			return rErr
 		}
 
-		_, wErr := remoteConn.Write(rBuf)
+	var wErr error
+		if len(rBuf) == 1 && rBuf[0] == 127{
+			rBuf[0] = 8
+			_, wErr = remoteConn.Write(rBuf)
+		} else {
+		_, wErr = remoteConn.Write(rBuf)
+		}
 
 		if wErr != nil {
 			remoteConn.Close()
@@ -295,6 +303,27 @@ func (d *telnetClient) client(
 }
 
 func (d *telnetClient) Close() error {
+	d.stateLock.Lock()
+	acquired := d.acquired
+	remoteConn := d.remoteConn
+	d.stateLock.Unlock()
+
+	if !acquired {
+		select {
+		case d.decision <- false:
+		default:
+		}
+
+		d.closeWait.Wait()
+		return nil
+	}
+
+	if remoteConn != nil {
+		remoteConn.Close()
+		d.closeWait.Wait()
+		return nil
+	}
+
 	remoteConn, remoteConnErr := d.getRemote()
 
 	if remoteConnErr == nil {

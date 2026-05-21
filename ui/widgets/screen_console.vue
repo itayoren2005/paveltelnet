@@ -180,16 +180,16 @@ class Term {
       switch (ev.domEvent.key) {
         case "Enter":
           ev.domEvent.preventDefault();
-          this.writeStr("\r\n");
+         // this.writeStr("\r\n");
           break;
         case "Backspace":
           ev.domEvent.preventDefault();
-          this.writeStr("\b \b");
+          //this.writeStr("\b \b");
           break;
         default:
           if (printable) {
             ev.domEvent.preventDefault();
-            this.writeStr(ev.key);
+            //this.writeStr(ev.key);
           }
       }
     });

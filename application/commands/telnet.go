@@ -43,6 +43,7 @@ const (
 
 const (
 	telnetDefaultPortString = "23"
+	telnetEscapeByte        = 0x1b
 )
 
 // Server signal codes
@@ -319,6 +320,7 @@ func (d *telnetClient) Close() error {
 	}
 
 	if remoteConn != nil {
+		_, _ = remoteConn.Write([]byte{telnetEscapeByte})
 		remoteConn.Close()
 		d.closeWait.Wait()
 		return nil
@@ -327,6 +329,7 @@ func (d *telnetClient) Close() error {
 	remoteConn, remoteConnErr := d.getRemote()
 
 	if remoteConnErr == nil {
+		_, _ = remoteConn.Write([]byte{telnetEscapeByte})
 		remoteConn.Close()
 	}
 

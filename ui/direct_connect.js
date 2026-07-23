@@ -15,12 +15,6 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-module github.com/nirui/sshwifty
-
-go 1.13
-
-require (
-	github.com/gorilla/websocket v1.5.0
-	golang.org/x/crypto v0.2.0
-	golang.org/x/net v0.2.0
-)
+export function hasDirectConnectTarget(query) {
+  return typeof query === "string" && query.length > 1 && query[0] === "+";
+}

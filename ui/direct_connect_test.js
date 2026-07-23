@@ -15,12 +15,19 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-module github.com/nirui/sshwifty
+import assert from "assert";
+import { hasDirectConnectTarget } from "./direct_connect.js";
 
-go 1.13
+describe("Direct connect", () => {
+  it("accepts direct connect targets", () => {
+    assert.strictEqual(hasDirectConnectTarget("+192.168.1.10"), true);
+    assert.strictEqual(hasDirectConnectTarget("+device"), true);
+  });
 
-require (
-	github.com/gorilla/websocket v1.5.0
-	golang.org/x/crypto v0.2.0
-	golang.org/x/net v0.2.0
-)
+  it("rejects empty or invalid targets", () => {
+    assert.strictEqual(hasDirectConnectTarget(""), false);
+    assert.strictEqual(hasDirectConnectTarget("+"), false);
+    assert.strictEqual(hasDirectConnectTarget("device"), false);
+    assert.strictEqual(hasDirectConnectTarget("   "), false);
+  });
+});
